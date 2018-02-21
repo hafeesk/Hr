@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include hr_bahrain *.css
+recursive-include hr_bahrain *.csv
+recursive-include hr_bahrain *.html
+recursive-include hr_bahrain *.ico
+recursive-include hr_bahrain *.js
+recursive-include hr_bahrain *.json
+recursive-include hr_bahrain *.md
+recursive-include hr_bahrain *.png
+recursive-include hr_bahrain *.py
+recursive-include hr_bahrain *.svg
+recursive-include hr_bahrain *.txt
+recursive-exclude hr_bahrain *.pyc
