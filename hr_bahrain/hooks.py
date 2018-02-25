@@ -79,37 +79,20 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Sales Invoice": {
+		"on_cancel": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
-	"all": [
-		"hr_bahrain.controllers.hr_controllers.allocate_annual_leave_monthly"
-		
-	]
-
+ 	"hourly": [
+ 		"hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+ 	],
 }
-# 	"daily": [
-# 		"hr_bahrain.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"hr_bahrain.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"hr_bahrain.tasks.weekly"
-# 	]
-# 	"monthly": [
-# 		"hr_bahrain.tasks.monthly"
-# 	]
-# }
 
 # Testing
 # -------
