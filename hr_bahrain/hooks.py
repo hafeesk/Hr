@@ -81,7 +81,7 @@ app_license = "MIT"
 
 doc_events = {
 	"Sales Invoice": {
-		"on_cancel": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+		"on_cancel": "hr_bahrain.hr_bahrain.hr_controllers.calculate_gratuity"
 	}
 }
 
@@ -90,8 +90,8 @@ doc_events = {
 
 scheduler_events = {
  	"hourly": [
- 		"hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
- 	],
+ 		"hr_bahrain.hr_bahrain.hr_controllers.calculate_gratuity"
+	],
 }
 
 # Testing

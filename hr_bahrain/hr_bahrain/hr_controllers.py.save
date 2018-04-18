@@ -3,9 +3,6 @@ import frappe
 from frappe import _, msgprint
 from frappe.utils import flt,cint, cstr, getdate
 from erpnext.hr.doctype.leave_allocation.leave_allocation import get_carry_forwarded_leaves
-import datetime
-import dateutil.relativedelta
-
 @frappe.whitelist()
 def allocate_annual_leave_monthly(self,status = None):
 	frappe.msgprint('hi')
@@ -53,7 +50,7 @@ def get_emp_gross_salary(emp):
 and se.employee = '{0}' ORDER BY se.from_date DESC LIMIT 1""".format(emp)
 
     gross_salary = frappe.db.sql(sql)
-    #frappe.msgprint(gross_salary)
+
     if gross_salary:
         gross_salary = gross_salary[0][0]
     else:
@@ -83,7 +80,7 @@ def calc_gratuity(no_of_years, days_per_year, gratuity_days, gross_salary):
 
     total_no_of_months = no_of_years * 12
     # total_no_of_months = 168
-     
+
     total_no_of_days_gratuity = no_of_years * days_per_year
     # total_no_of_days_gratuity = 4936
 
@@ -124,50 +121,58 @@ def get_gratuity_calc_start_date(emp):
     return d
 
 @frappe.whitelist()
-def calculate_gratuity():
-	#frappe.msgprint('hi')
-    
+def calculate_gratuity(self,status = None):
+	frappe.msgprint('hi')
 	sql = """ Select name, employee_name, gratuity_payable_till_date, gratuity_till_date, date_of_joining from `tabEmployee`
         	where `status`= 'Active' """
 
         emp_list = frappe.db.sql(sql, as_dict=1)
-	days_per_year = 365.0
+
+        days_per_year = 365.0
         now = datetime.datetime.now().date()
         s_now = now.strftime('%Y-%m-%d')
-	
+
         for emp in emp_list:
-            joining_date = emp.date_of_joining
+            date_of_joining = get_gratuity_calc_start_date(emp.name)
+            joining_date = datetime.datetime.strptime(date_of_joining, '%Y-%m-%d').date()
             diff = dateutil.relativedelta.relativedelta(now, joining_date)
             working_years = dateutil.relativedelta.relativedelta(now, joining_date).years
-	    
+
             gross_salary = get_emp_gross_salary(emp.name)
 
             sum_gross_gratuity = 0
             sum_gross_payable = 0
-	    #frappe.msgprint(str(working_years))
-            if working_years >= 3.0:
-                    gratuity_days = 30.0
-		    
-                    gross_gratuity = calc_gratuity(working_years, days_per_year, gratuity_days, gross_salary)
-                    sum_gross_gratuity = gross_gratuity
-		    
-            elif working_years >= 1.0 and working_years < 3.0:
-		    
+
+            s_last_date = joining_date.strftime('%Y-%m-%d')
+
+            # for complete years
+            for yc in range(working_years):
+                if yc > 3.0:
+                    b = 0
+                    b += 1
                     gratuity_days = 15.0
-		    
-                    gross_gratuity = calc_gratuity(working_years, days_per_year, gratuity_days, gross_salary)
-                    sum_gross_gratuity = gross_gratuity
-		    
-	    else:
-		    sum_gross_gratuity = 0
-	    #frappe.msgprint(emp.name)
+                    if b > 3:
+                        gratuity_days = 30.0
+                    gross_gratuity = calc_gratuity(yc, days_per_year, gratuity_days, gross_salary)
+                    sum_gross_gratuity += gross_gratuity
+                else:
+                    gratuity_days = 15.0
+                    gross_gratuity = calc_gratuity(yc, days_per_year, gratuity_days, gross_salary)
+                    sum_gross_gratuity += gross_gratuity
+
+            gratuity_paid = get_paid_gratuity(emp.name, s_now)
             emp_doc = frappe.get_doc('Employee', emp.name)
             emp_doc.gratuity_till_date = sum_gross_gratuity
-            emp_doc.gratuity_payable_till_date = sum_gross_gratuity - emp_doc.gratuity_paid_till_date
-            
-            emp_doc.save()
+            emp_doc.gratuity_payable_till_date = sum_gross_payable
+            emp_doc.gratuity_paid_till_date = gratuity_paid
+            emp_doc.gratuity_balance_till_date = sum_gross_payable - gratuity_paid + gratuity_paid
+            emp_doc.net_salary = gross_salary
+            emp_doc.basic_salary = gross_salary * 0.45
 
-            #frappe.db.commit()
-     	    
-	
+            emp_doc.db_update()
 
+    except Exception as e:
+        print e
+    finally:
+        frappe.db.commit()
+        frappe.destroy()
