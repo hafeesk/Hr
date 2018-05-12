@@ -48,8 +48,13 @@ def allocate_annual_leave_monthly(self,status = None):
         frappe.db.commit()
 
 def get_emp_gross_salary(emp):
-
-    sql = """SELECT base FROM `tabSalary Structure` ss,`tabSalary Structure Employee` se WHERE	ss.`name` = se.parent 
+    grat_set = frappe.db.get_value("HR Settings", None, "gratuity_base_on")
+    frappe.msgprint(grat_set)
+    if grat_set == "Base Salary":
+    	sql = """SELECT base FROM `tabSalary Structure` ss,`tabSalary Structure Employee` se WHERE	ss.`name` = se.parent 
+and se.employee = '{0}' ORDER BY se.from_date DESC LIMIT 1""".format(emp)
+    else:
+	sql = """SELECT (base+variable) as salary FROM `tabSalary Structure` ss,`tabSalary Structure Employee` se WHERE      ss.`name` = se.parent
 and se.employee = '{0}' ORDER BY se.from_date DESC LIMIT 1""".format(emp)
 
     gross_salary = frappe.db.sql(sql)
@@ -127,39 +132,70 @@ def get_gratuity_calc_start_date(emp):
 def calculate_gratuity():
 	#frappe.msgprint('hi')
     
-	sql = """ Select name, employee_name, gratuity_payable_till_date, gratuity_till_date, date_of_joining from `tabEmployee`
+	sql = """ Select name, employee_name, gratuity_payable_till_date, gratuity_till_date, date_of_joining,country from `tabEmployee`
         	where `status`= 'Active' """
 
         emp_list = frappe.db.sql(sql, as_dict=1)
 	days_per_year = 365.0
         now = datetime.datetime.now().date()
-        s_now = now.strftime('%Y-%m-%d')
+	cur_year = datetime.datetime.now().year
+	s_now = now.strftime('%Y-%m-%d')
 	
         for emp in emp_list:
+	    if emp.country == "Bahrain":
+		continue
+
             joining_date = emp.date_of_joining
+	    last_working_year = joining_date.replace(year=cur_year)
+	    if(last_working_year > now):
+		last_working_year = joining_date.replace(year=cur_year-1)	
+            #frappe.msgprint(frappe.as_json(last_working_year))
+            last_year_working_days = now-last_working_year
+            #frappe.msgprint(frappe.as_json(last_year_working_days.days))
+
             diff = dateutil.relativedelta.relativedelta(now, joining_date)
             working_years = dateutil.relativedelta.relativedelta(now, joining_date).years
-	    
+	    #frappe.msgprint(str(working_years))
             gross_salary = get_emp_gross_salary(emp.name)
 
             sum_gross_gratuity = 0
             sum_gross_payable = 0
 	    #frappe.msgprint(str(working_years))
-            if working_years >= 3.0:
-                    gratuity_days = 30.0
-		    
-                    gross_gratuity = calc_gratuity(working_years, days_per_year, gratuity_days, gross_salary)
-                    sum_gross_gratuity = gross_gratuity
-		    
-            elif working_years >= 1.0 and working_years < 3.0:
-		    
-                    gratuity_days = 15.0
-		    
-                    gross_gratuity = calc_gratuity(working_years, days_per_year, gratuity_days, gross_salary)
-                    sum_gross_gratuity = gross_gratuity
-		    
+	    count = 0
+	    if working_years >=1:        
+	        for yc in range(1,working_years+1):
+                    if yc > 3.0:
+			count = count + 1
+                        gratuity_days = 30.0
+                        gross_gratuity = calc_gratuity(1, days_per_year, gratuity_days, gross_salary)
+			frappe.msgprint(str(gross_gratuity))
+                        sum_gross_gratuity += gross_gratuity
+#			#frappe.msgprint(str(sum_gross_gratuity))
+                    else:
+			if yc >= 1:
+			    count = count + 1
+                            gratuity_days = 15.0
+                            gross_gratuity = calc_gratuity(1, days_per_year, gratuity_days, gross_salary)
+			    frappe.msgprint(str(gross_gratuity))
+                            sum_gross_gratuity += gross_gratuity
+#			    #frappe.msgprint(str(sum_gross_gratuity))
+		frappe.msgprint(str(count))
 	    else:
-		    sum_gross_gratuity = 0
+		sum_gross_gratuity = 0
+	    if last_year_working_days.days:
+		frappe.msgprint('hi')
+		frappe.msgprint(str(last_year_working_days.days))
+		year_per = last_year_working_days.days/365.00
+		frappe.msgprint(str(year_per))
+		if working_years >= 1 and working_years <3:
+			gross_gratuity = (gross_salary/2) * year_per
+		elif working_years >= 3:
+			gross_gratuity = gross_salary * year_per
+		else:
+			gross_gratuity = (gross_salary/2) * year_per
+		frappe.msgprint(str(gross_gratuity))
+		sum_gross_gratuity += gross_gratuity
+
 	    #frappe.msgprint(emp.name)
             emp_doc = frappe.get_doc('Employee', emp.name)
             emp_doc.gratuity_till_date = sum_gross_gratuity
