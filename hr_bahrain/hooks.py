@@ -113,4 +113,4 @@ scheduler_events = {
 # 	"frappe.desk.doctype.event.event.get_events": "hr_bahrain.event.get_events"
 # }
 
-fixtures = [ {"dt":"Custom Field", "filters": ["dt", "in", ("HR Settings","Employee")] }] 
+fixtures = ["Custom Field"]
