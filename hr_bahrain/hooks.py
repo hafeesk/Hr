@@ -79,11 +79,18 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
+#doc_events = {
+#	"Sales Invoice": {
+#		"on_cancel": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+#	}
+#}
+
 doc_events = {
-	"Sales Invoice": {
-		"on_cancel": "hr_bahrain.hr_bahrain.hr_controllers.calculate_gratuity"
-	}
+       "Sales Invoice": {
+               "on_submit": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+       }
 }
+
 
 # Scheduled Tasks
 # ---------------
@@ -106,4 +113,4 @@ scheduler_events = {
 # 	"frappe.desk.doctype.event.event.get_events": "hr_bahrain.event.get_events"
 # }
 
-fixtures = ["Custom Field"]
+fixtures = [ {"dt":"Custom Field", "filters": ["dt", "in", ("HR Settings","Employee")] }] 

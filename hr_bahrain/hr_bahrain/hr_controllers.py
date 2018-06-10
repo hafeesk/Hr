@@ -8,42 +8,38 @@ import dateutil.relativedelta
 
 @frappe.whitelist()
 def allocate_annual_leave_monthly(self,status = None):
-	frappe.msgprint('hi')
+	grat_set = frappe.db.get_value("HR Settings", None, "enable_monthly_leave_allocation")	
+	frappe.msgprint("hi in annual leave")
         employee = frappe.db.sql("""select name,employee_name,vacation_starts_from from `tabEmployee` where status = 'Active'""")
         for emp in employee:
-                max_to_date = frappe.db.sql("""select MAX(to_date) from `tabLeave Allocation` where employee = '{}'""".format(emp[0]))
-
-                if max_to_date:
-                        #frappe.msgprint(frappe.as_json(max_to_date))
+                leave_allocation_data = frappe.db.sql("""select from_date,total_leaves_allocated,name from `tabLeave Allocation` where employee = '{}' and leave_type = 'Annual Leave'""".format(emp[0]))
+                frappe.msgprint(frappe.as_json(leave_allocation_data))
+                if leave_allocation_data:
+                        frappe.msgprint(frappe.as_json(leave_allocation_data))
                         #frappe.msgprint(frappe.as_json(max_to_date[0][0]))
 
-                        if not max_to_date[0][0]:
+                        if leave_allocation_data[0][0]:
                                 start_date = emp[2]
-                                end_date = frappe.utils.add_days(start_date,2)
-                                #frappe.msgprint('1')
-                                #frappe.msgprint(frappe.as_json(start_date))
-                                #frappe.msgprint(frappe.as_json(end_date))
-
-                        else:
-                                start_date = max_to_date[0][0]
-                                end_date = frappe.utils.add_days(start_date,2)
-                                #frappe.msgprint('2')
-                                #frappe.msgprint(frappe.as_json(start_date))
-                                #frappe.msgprint(frappe.as_json(end_date))
-                carry_fwd_leave = get_carry_forwarded_leaves(emp[0],'Casual Leave',start_date,1)
-                if carry_fwd_leave % 1 == 0:
-                        end_date = frappe.utils.add_days(end_date,1)
-                #frappe.msgprint('hi')
-                #frappe.msgprint(frappe.as_json(carry_fwd_leave))
-                leave_allocation_doc = frappe.new_doc("Leave Allocation")
-                leave_allocation_doc.update({'employee': emp[0], 'employee_name': emp[1],'leave_type':'Casual Leave','from_date':start_date,'to_date':end_date,'new_leaves_allocated':2.5,'carry_forward':1,'carry_forwarded_leaves':carry_fwd_leave,'total_leaves_allocated':carry_fwd_leave+2.5})
-                leave_allocation_doc.docstatus = 1
-                leave_allocation_doc.flags.ignore_validate = True
-                leave_allocation_doc.flags.ignore_mandatory = True
-                leave_allocation_doc.flags.ignore_validate_update_after_submit = True
-                leave_allocation_doc.flags.ignore_links = True
-                leave_allocation_doc.save()
-                leave_allocation_doc.submit()
+                                total_leave_days = leave_allocation_data[0][1] + 2.5
+                                end_date = frappe.utils.add_days(start_date,total_leave_days)
+                                frappe.msgprint(frappe.as_json(start_date))
+                                frappe.msgprint(frappe.as_json(end_date))
+                                frappe.msgprint(frappe.as_json(total_leave_days))
+                                doc = frappe.get_doc("Leave Allocation",leave_allocation_data[0][2])
+                                doc.to_date = end_date
+                                doc.new_leaves_allocated = total_leave_days
+                                doc.total_leaves_allocated = total_leave_days
+                                doc.save()
+		else:
+                	leave_allocation_doc = frappe.new_doc("Leave Allocation")
+                	leave_allocation_doc.update({'employee': emp[0], 'employee_name': emp[1],'leave_type':'Annual Leave','from_date':start_date,'to_date':end_date,'new_leaves_allocated':2.5,'carry_forward':0,'carry_forwarded_leaves':0,'total_leaves_allocated':2.5})
+                	leave_allocation_doc.docstatus = 1
+                	leave_allocation_doc.flags.ignore_validate = True
+                	leave_allocation_doc.flags.ignore_mandatory = True
+                	leave_allocation_doc.flags.ignore_validate_update_after_submit = True
+                	leave_allocation_doc.flags.ignore_links = True
+                	leave_allocation_doc.save()
+                	leave_allocation_doc.submit()
 
         frappe.db.commit()
 
@@ -130,7 +126,7 @@ def get_gratuity_calc_start_date(emp):
 
 @frappe.whitelist()
 def calculate_gratuity():
-	#frappe.msgprint('hi')
+	
     
 	sql = """ Select name, employee_name, gratuity_payable_till_date, gratuity_till_date, date_of_joining,country from `tabEmployee`
         	where `status`= 'Active' """
@@ -183,7 +179,7 @@ def calculate_gratuity():
 	    else:
 		sum_gross_gratuity = 0
 	    if last_year_working_days.days:
-		frappe.msgprint('hi')
+		
 		frappe.msgprint(str(last_year_working_days.days))
 		year_per = last_year_working_days.days/365.00
 		frappe.msgprint(str(year_per))
