@@ -7,7 +7,7 @@ import datetime
 import dateutil.relativedelta
 
 @frappe.whitelist()
-def allocate_annual_leave_monthly(self,status = None):
+def allocate_annual_leave_monthly():
 	grat_set = frappe.db.get_value("HR Settings", None, "enable_monthly_leave_allocation")	
 	frappe.msgprint("hi in annual leave")
         employee = frappe.db.sql("""select name,employee_name,vacation_starts_from from `tabEmployee` where status = 'Active'""")
@@ -17,7 +17,7 @@ def allocate_annual_leave_monthly(self,status = None):
                 if leave_allocation_data:
                         frappe.msgprint(frappe.as_json(leave_allocation_data))
                         #frappe.msgprint(frappe.as_json(max_to_date[0][0]))
-
+			frappe.msgprint("leave allocation data")
                         if leave_allocation_data[0][0]:
                                 start_date = emp[2]
                                 total_leave_days = leave_allocation_data[0][1] + 2.5
@@ -31,17 +31,18 @@ def allocate_annual_leave_monthly(self,status = None):
                                 doc.total_leaves_allocated = total_leave_days
                                 doc.save()
 		else:
+			frappe.msgprint("without leave allocation data")
                 	leave_allocation_doc = frappe.new_doc("Leave Allocation")
                 	leave_allocation_doc.update({'employee': emp[0], 'employee_name': emp[1],'leave_type':'Annual Leave','from_date':start_date,'to_date':end_date,'new_leaves_allocated':2.5,'carry_forward':0,'carry_forwarded_leaves':0,'total_leaves_allocated':2.5})
-                	leave_allocation_doc.docstatus = 1
+                	
                 	leave_allocation_doc.flags.ignore_validate = True
                 	leave_allocation_doc.flags.ignore_mandatory = True
                 	leave_allocation_doc.flags.ignore_validate_update_after_submit = True
                 	leave_allocation_doc.flags.ignore_links = True
                 	leave_allocation_doc.save()
-                	leave_allocation_doc.submit()
+                	
 
-        frappe.db.commit()
+        
 
 def get_emp_gross_salary(emp):
     grat_set = frappe.db.get_value("HR Settings", None, "gratuity_base_on")

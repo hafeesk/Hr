@@ -85,11 +85,11 @@ app_license = "MIT"
 #	}
 #}
 
-doc_events = {
-       "Sales Invoice": {
-               "on_submit": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
-       }
-}
+#doc_events = {
+#       "Employee": {
+#               "validate": "hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
+#       }
+#}
 
 
 # Scheduled Tasks
@@ -97,7 +97,8 @@ doc_events = {
 
 scheduler_events = {
  	"hourly": [
- 		"hr_bahrain.hr_bahrain.hr_controllers.calculate_gratuity"
+ 		"hr_bahrain.hr_bahrain.hr_controllers.calculate_gratuity",
+		"hr_bahrain.hr_bahrain.hr_controllers.allocate_annual_leave_monthly"
 	],
 }
 
